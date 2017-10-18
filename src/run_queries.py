@@ -1,11 +1,12 @@
 import argparse
 import uuid
+import sys
 from typing import Tuple
+from google.api.core.exceptions import GoogleAPIError
 from google.cloud import bigquery
 
 from sql import SAVE_FILTERED_USER_ID_QUERY
 from sql import SAVE_FAVORITE_SHARES_IN_TIERS
-
 """
 This script runs the two queries described in the task requirements
 (repo/prdt_test/references/Data Engineer FT 2017 - test task.pdf).
@@ -19,7 +20,7 @@ DATASET = 'task_results'
 FILTERED_USER_IDS_TABLE = 'a1_results'
 FAVORITE_SHARES_IN_TIERS_TABLE = 'a2_results'
 
-QUERY_TIMEOUT = 14 * 60_000  # 14 minutes
+QUERY_TIMEOUT = 14 * 60000  # 14 minutes
 
 
 def parse_args() -> argparse.Namespace:
@@ -65,17 +66,21 @@ def submit_query_and_wait(
     parameters. Can be run in dry_run mode (queries are validated,
     nothing is fetched)
     """
+    try:
+        query_job = client.run_async_query(
+            '{}_job_{}'.format(label, uuid.uuid4()),
+            query,
+            query_parameters=params)
 
-    query_job = client.run_async_query(
-        '{}_job_{}'.format(label, uuid.uuid4()),
-        query,
-        query_parameters=params)
+        query_job.use_legacy_sql = False
+        query_job.dry_run = dry_run
 
-    query_job.use_legacy_sql = False
-    query_job.dry_run = dry_run
-
-    query_job.begin()
-    query_job.result(timeout=timeout)
+        query_job.begin()
+        query_job.result(timeout=timeout)
+    except GoogleAPIError as e:
+        print('Error occurred while trying to run the {} query: {}'
+              .format(label, e))
+        exit(1)
 
 
 def execute_queries(dry_run: bool = False) -> None:
@@ -101,8 +106,8 @@ def execute_queries(dry_run: bool = False) -> None:
     ))
 
     print('Running first query:',
-          'fetching and saving filtered user ids in table {}.{} ...'.
-          format(DATASET, FILTERED_USER_IDS_TABLE))
+          'fetching and saving filtered user ids in table {}.{}...'
+          .format(DATASET, FILTERED_USER_IDS_TABLE))
 
     submit_query_and_wait(
         client,
@@ -113,14 +118,14 @@ def execute_queries(dry_run: bool = False) -> None:
         params=(bigquery.ScalarQueryParameter('tags_regexp', 'STRING',
                                               'java|python'),
                 bigquery.ScalarQueryParameter('year', 'STRING', 2016),
-                bigquery.ScalarQueryParameter('reputation', 'INT64', 400_000)),
+                bigquery.ScalarQueryParameter('reputation', 'INT64', 400000)),
         dry_run=dry_run)
 
     print('Fetched and saved filtered user ids.')
 
     print('Running second query:',
-          'fetching and saving favorite question shares in table {}.{}...'.
-          format(DATASET, FAVORITE_SHARES_IN_TIERS_TABLE))
+          'fetching and saving favorite question shares in table {}.{}...'
+          .format(DATASET, FAVORITE_SHARES_IN_TIERS_TABLE))
 
     # we only wait to show a message to the user
     submit_query_and_wait(
@@ -137,5 +142,8 @@ def execute_queries(dry_run: bool = False) -> None:
 
 
 if __name__ == "__main__":
+    if sys.version_info[0] < 3:
+        raise 'Python 3 required'
+
     args = parse_args()
     execute_queries(args.dry_run)
