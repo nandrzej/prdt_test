@@ -64,6 +64,10 @@ def execute_queries() -> None:
         bigquery.SchemaField('share', 'FLOAT'),
     ))
 
+    print('Running first query:',
+          'fetching and saving filtered user ids in table {}.{} ...'.
+          format(DATASET, FILTERED_USER_IDS_TABLE))
+
     submit_query_and_wait(
         client,
         label='save_filtered_user_ids_query',
@@ -74,6 +78,12 @@ def execute_queries() -> None:
                                               'java|python'),
                 bigquery.ScalarQueryParameter('year', 'STRING', 2016)))
 
+    print('Fetched and saved filtered user ids.')
+
+    print('Running second query:',
+          'fetching and saving favorite question shares in table {}.{}...'.
+          format(DATASET, FAVORITE_SHARES_IN_TIERS_TABLE))
+
     # we only wait to show a message to the user
     submit_query_and_wait(
         client,
@@ -83,6 +93,7 @@ def execute_queries() -> None:
             FILTERED_USER_IDS_TABLE),
         timeout=QUERY_TIMEOUT)
 
+    print('Fetched and saved favorite question shares in tiers.')
     print('Done.')
 
 
