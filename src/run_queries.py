@@ -9,7 +9,7 @@ from sql import SAVE_FILTERED_USER_ID_QUERY
 from sql import SAVE_FAVORITE_SHARES_IN_TIERS
 """
 This script runs the two queries described in the task requirements
-(repo/prdt_test/references/Data Engineer FT 2017 - test task.pdf).
+(references/Data Engineer FT 2017 - test task.pdf).
 
 First query fetches a list of filtered user ids, second one
 uses the list, calculates favorite questions share and saves them.
