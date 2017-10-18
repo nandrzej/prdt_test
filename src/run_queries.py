@@ -1,4 +1,5 @@
 from google.cloud import bigquery
+import argparse
 import uuid
 from typing import Tuple
 
@@ -11,6 +12,18 @@ FILTERED_USER_IDS_TABLE = 'a1_results'
 FAVORITE_SHARES_IN_TIERS_TABLE = 'a2_results'
 
 QUERY_TIMEOUT = 14 * 60_000  # 14 minutes
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description='Run scripts for tasks a1 and a2.')
+    parser.add_argument(
+        '--dry_run',
+        type=bool,
+        required=False,
+        default=False,
+        help='Connect to Google Cloud and test the queries.')
+    return parser.parse_args()
 
 
 def create_table(dataset: bigquery.dataset.Dataset, table_name: str,
@@ -33,7 +46,7 @@ def submit_query_and_wait(
         query: str,
         timeout: int,
         params: Tuple[bigquery.ScalarQueryParameter, ...] = (),
-        dry_run: bool = True) -> None:
+        dry_run: bool = False) -> None:
 
     query_job = client.run_async_query(
         '{}_job_{}'.format(label, uuid.uuid4()),
@@ -47,7 +60,7 @@ def submit_query_and_wait(
     query_job.result(timeout=timeout)
 
 
-def execute_queries() -> None:
+def execute_queries(dry_run: bool = False) -> None:
     client = bigquery.Client(project=PROJECT)
     dataset = client.dataset(DATASET)
 
@@ -76,7 +89,8 @@ def execute_queries() -> None:
         timeout=QUERY_TIMEOUT,
         params=(bigquery.ScalarQueryParameter('tags_regexp', 'STRING',
                                               'java|python'),
-                bigquery.ScalarQueryParameter('year', 'STRING', 2016)))
+                bigquery.ScalarQueryParameter('year', 'STRING', 2016)),
+        dry_run=dry_run)
 
     print('Fetched and saved filtered user ids.')
 
@@ -91,11 +105,13 @@ def execute_queries() -> None:
         query=SAVE_FAVORITE_SHARES_IN_TIERS.format(
             PROJECT, DATASET, FAVORITE_SHARES_IN_TIERS_TABLE,
             FILTERED_USER_IDS_TABLE),
-        timeout=QUERY_TIMEOUT)
+        timeout=QUERY_TIMEOUT,
+        dry_run=dry_run)
 
     print('Fetched and saved favorite question shares in tiers.')
     print('Done.')
 
 
 if __name__ == "__main__":
-    execute_queries()
+    args = parse_args()
+    execute_queries(args.dry_run)
