@@ -112,7 +112,8 @@ def execute_queries(dry_run: bool = False) -> None:
         timeout=QUERY_TIMEOUT,
         params=(bigquery.ScalarQueryParameter('tags_regexp', 'STRING',
                                               'java|python'),
-                bigquery.ScalarQueryParameter('year', 'STRING', 2016)),
+                bigquery.ScalarQueryParameter('year', 'STRING', 2016),
+                bigquery.ScalarQueryParameter('reputation', 'INT64', 400_000)),
         dry_run=dry_run)
 
     print('Fetched and saved filtered user ids.')

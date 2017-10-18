@@ -1,18 +1,25 @@
 SAVE_FILTERED_USER_ID_QUERY = """
-    INSERT INTO `{0}.{1}.{2}` (user_id)
+    INSERT INTO
+      `{0}.{1}.{2}` (user_id)
     SELECT
-      DISTINCT owner_user_id
+      DISTINCT p.owner_user_id
     FROM
-      `bigquery-public-data.stackoverflow.stackoverflow_posts`
+      `bigquery-public-data.stackoverflow.stackoverflow_posts` AS p
+    JOIN
+      `bigquery-public-data.stackoverflow.users` AS u
+    ON
+      (u.id=p.owner_user_id)
     WHERE
-      REGEXP_CONTAINS(tags, @tags_regexp)
+      REGEXP_CONTAINS(p.tags, @tags_regexp)
       AND FORMAT_DATETIME('%Y',
-        CAST(last_activity_date AS DATETIME)) = @year
-      AND owner_user_id IS NOT NULL
+        CAST(p.last_activity_date AS DATETIME)) = @year
+      AND p.owner_user_id IS NOT NULL
+      AND u.reputation >= @reputation
 """
 
 SAVE_FAVORITE_SHARES_IN_TIERS = """
-    INSERT INTO `{0}.{1}.{2}` (user_id, tier, share)
+    INSERT INTO
+      `{0}.{1}.{2}` (user_id, tier, share)
     WITH
       favorites_sum_per_tiers AS (
       SELECT
