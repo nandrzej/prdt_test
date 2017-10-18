@@ -25,4 +25,4 @@ it-test: deps test-deps
 	py.test
 
 run: deps
-	python src/bigquery_tool.py
+	python src/run_queries.py
