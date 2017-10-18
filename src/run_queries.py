@@ -1,10 +1,18 @@
-from google.cloud import bigquery
 import argparse
 import uuid
 from typing import Tuple
+from google.cloud import bigquery
 
 from sql import SAVE_FILTERED_USER_ID_QUERY
 from sql import SAVE_FAVORITE_SHARES_IN_TIERS
+
+"""
+This script runs the two queries described in the task requirements
+(repo/prdt_test/references/Data Engineer FT 2017 - test task.pdf).
+
+First query fetches a list of filtered user ids, second one
+uses the list, calculates favorite questions share and saves them.
+"""
 
 PROJECT = 'candidate-evaluation'
 DATASET = 'task_results'
@@ -28,6 +36,10 @@ def parse_args() -> argparse.Namespace:
 
 def create_table(dataset: bigquery.dataset.Dataset, table_name: str,
                  table_schema: Tuple[bigquery.SchemaField, ...]) -> None:
+    """
+    Creates a table for given dataset with given name.
+    Deletes the old one if exists.
+    """
 
     table = dataset.table(table_name)
 
@@ -47,6 +59,12 @@ def submit_query_and_wait(
         timeout: int,
         params: Tuple[bigquery.ScalarQueryParameter, ...] = (),
         dry_run: bool = False) -> None:
+    """
+    Submits a standard SQL,  asynchronous query job using given client
+    with given label (unique id is added to it) and timeout. Accepts query
+    parameters. Can be run in dry_run mode (queries are validated,
+    nothing is fetched)
+    """
 
     query_job = client.run_async_query(
         '{}_job_{}'.format(label, uuid.uuid4()),
@@ -61,6 +79,11 @@ def submit_query_and_wait(
 
 
 def execute_queries(dry_run: bool = False) -> None:
+    """
+    Executes the two queries defined in sql.py.
+    :param dry_run: if True queries are validated but
+    nothing is fetched
+    """
     client = bigquery.Client(project=PROJECT)
     dataset = client.dataset(DATASET)
 
